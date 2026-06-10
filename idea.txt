@@ -1,0 +1,10 @@
+ctrlplane-enhanced: Fork Ctrlplane (open-source CI/CD orchestration platform, v0.8.0) and add a Python sidecar AI layer that provides:
+
+1. ML-powered deployment risk scoring (XGBoost) — predict rollback probability before deployment
+2. Anomaly-triggered auto-rollback (Isolation Forest) — detect golden signal anomalies and trigger rollback in < 60s
+3. NL pipeline generation (Claude/OpenAI) — convert natural language descriptions to validated Ctrlplane YAML
+4. Predictive resource scheduling (XGBoost regression) — forecast build duration and compute requirements
+
+The sidecar runs as a separate Python service alongside the upstream Ctrlplane Go server, connecting via REST API. No upstream code modifications required.
+
+Continuously ingests the latest CI/CD and MLOps research papers via automated ArXiv + GitHub crawl, feeding insights back into model improvements.

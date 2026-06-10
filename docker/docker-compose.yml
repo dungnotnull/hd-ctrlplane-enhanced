@@ -1,0 +1,114 @@
+﻿version: "3.9"
+
+services:
+
+  # â”€â”€ AI Sidecar Agent (this project) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  ctrlplane-ai-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ctrlplane-ai-agent
+    restart: unless-stopped
+    ports:
+      - "8766:8766"
+    environment:
+      - CTRLPLANE_URL=http://ctrlplane:3000
+      - CTRLPLANE_API_KEY=${CTRLPLANE_API_KEY}
+      - PROMETHEUS_URL=http://prometheus:9090
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    volumes:
+      - agent_data:/app/data
+      - agent_models:/app/models
+    depends_on:
+      - ctrlplane
+      - prometheus
+    networks:
+      - ctrlplane-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8766/api/v1/agent/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # â”€â”€ Ctrlplane upstream server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  ctrlplane:
+    image: ghcr.io/ctrlplanedev/ctrlplane:0.8.0
+    container_name: ctrlplane
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      - SECRET_KEY=${CTRLPLANE_SECRET_KEY:-changeme-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ctrlplane-net
+
+  # â”€â”€ PostgreSQL for Ctrlplane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  postgres:
+    image: postgres:15-alpine
+    container_name: ctrlplane-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=ctrlplane
+      - POSTGRES_PASSWORD=ctrlplane
+      - POSTGRES_DB=ctrlplane
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ctrlplane-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ctrlplane"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # â”€â”€ Prometheus (golden signal monitoring) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  prometheus:
+    image: prom/prometheus:v2.49.0
+    container_name: ctrlplane-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+    networks:
+      - ctrlplane-net
+
+  # â”€â”€ Ollama (local LLM for offline mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ctrlplane-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ctrlplane-net
+    profiles:
+      - offline  # Only starts with: docker-compose --profile offline up
+
+volumes:
+  agent_data:
+  agent_models:
+  postgres_data:
+  prometheus_data:
+  ollama_data:
+
+networks:
+  ctrlplane-net:
+    driver: bridge
+

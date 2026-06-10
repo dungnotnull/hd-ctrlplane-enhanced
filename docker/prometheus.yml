@@ -1,0 +1,30 @@
+# ctrlplane-enhanced — Prometheus scrape configuration
+# Monitors golden signals for auto-rollback anomaly detection.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ?? Ctrlplane AI Agent metrics ?????????????????????????????????????????
+  - job_name: "ctrlplane-ai-agent"
+    static_configs:
+      - targets: ["ctrlplane-ai-agent:8766"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+
+  # ?? Application / service metrics (production) ?????????????????????????
+  - job_name: "application"
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+    scrape_interval: 15s
+    # These metric names are what auto_rollback.py queries:
+    #   http_requests_total{status=~"5..",job=~"<service>"}
+    #   http_request_duration_seconds_bucket{job=~"<service>"}
+    #   container_cpu_usage_seconds_total{container=~"<service>"}
+    #   container_memory_working_set_bytes{container=~"<service>"}
+
+  # ?? Prometheus self-monitoring ??????????????????????????????????????????
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

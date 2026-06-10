@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Models (HuggingFace cache - can be GB-sized)
+models/*.pkl
+models/*.bin
+models/*.onnx
+models/*.pt
+models/sentence-transformers_*
+models/BAAI_*
+models/Salesforce_*
+models/facebook_*
+!models/.gitkeep
+
+# Data
+data/
+*.db
+*.sqlite3
+ctrlplane_memory.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Docker volumes
+postgres_data/
+
+# Jupyter
+.ipynb_checkpoints/
+.env.local
+
+# Additional
+*.tar.gz
+*.zip
+node_modules/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+*.pyc
+.claude/
+.codex/
+.agents/

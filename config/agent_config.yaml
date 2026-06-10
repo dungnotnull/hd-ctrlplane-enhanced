@@ -1,0 +1,88 @@
+agent:
+  name: "ctrlplane-enhanced"
+  version: "1.0.0"
+  upstream: "ctrlplane"
+  upstream_version: "0.8.0"
+  log_level: "INFO"
+
+server:
+  host: "0.0.0.0"
+  port: 8766
+
+ctrlplane:
+  base_url: "${CTRLPLANE_URL}"
+  api_key: "${CTRLPLANE_API_KEY}"
+  timeout_seconds: 10
+
+memory:
+  db_path: "./data/ctrlplane_memory.db"
+
+risk_scorer:
+  model_path: "./models/risk_scorer.pkl"
+  risk_threshold: 0.70
+  min_samples_for_ml: 50
+  retrain_every_n_samples: 50
+
+auto_rollback:
+  enabled: true
+  contamination: 0.05
+  anomaly_threshold: -0.30
+  evaluation_window_seconds: 300
+  max_rollback_age_seconds: 3600
+  min_baseline_samples: 100
+  golden_signals:
+    - http_requests_error_rate
+    - http_request_duration_p95_seconds
+    - http_request_duration_p99_seconds
+    - container_cpu_usage_ratio
+    - container_memory_usage_ratio
+    - http_requests_per_second
+
+nl_pipeline:
+  max_attempts: 3
+  max_tokens: 2048
+  validation: strict
+
+resource_scheduler:
+  model_path: "./models/resource_scheduler.pkl"
+  min_samples_for_ml: 50
+  retrain_every_n_samples: 50
+  prediction_horizon_hours: 24
+
+hf:
+  cache_dir: "./models"
+  idle_unload_seconds: 1800
+  models:
+    text_embedding: "BAAI/bge-large-en-v1.5"
+    sentence_similarity: "sentence-transformers/all-MiniLM-L6-v2"
+    code_analysis: "Salesforce/codet5p-770m"
+    summarization: "facebook/bart-large-cnn"
+
+llm:
+  primary: "claude"
+  fallback: "openai"
+  offline: "ollama"
+  models:
+    claude: "claude-opus-4-8"
+    openai: "gpt-4o"
+    ollama: "llama3"
+  retry_attempts: 3
+  retry_base_delay_seconds: 1
+
+knowledge:
+  update_schedule: "weekly"
+  update_day: "sun"
+  update_hour: 2
+  sources:
+    arxiv_categories:
+      - "cs.SE"
+      - "cs.DC"
+    rss_feeds:
+      - name: "GitHub Engineering"
+        url: "https://github.blog/category/engineering/feed/"
+      - name: "CNCF Blog"
+        url: "https://www.cncf.io/blog/feed/"
+    github_repos:
+      - "ctrlplanedev/ctrlplane"
+  top_n_papers: 20
+  relevance_window_days: 90
